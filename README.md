@@ -24,3 +24,10 @@ Lab 4:
   * Thinness ratio (circularity)
   * Aspect Ratio
   * Horizontal and Vertical projection
+
+
+Lab 5:
+  * Color image from a label matrix
+  * Step by step visualisation of the previous implementation
+  * Two-pass component labeling alghorithm
+![image](https://github.com/Radu-Maris/Image-Processing/assets/58084616/20617ef3-19ce-43bf-9c58-df13d5a00a7a)
