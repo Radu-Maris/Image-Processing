@@ -5,8 +5,11 @@
 #include "common.h"
 #include <opencv2/core/utils/logger.hpp>
 #include <iostream>
+#include <fstream>
 
 wchar_t* projectPath;
+
+using namespace std;
 
 void testOpenImage()
 {
@@ -1109,29 +1112,29 @@ void objectsGraytoColor() {
 		imshow("image", src);
 		int height = src.rows;
 		int width = src.cols;
-
-		Mat dst = Mat(height, width, CV_8UC3, Scalar(255, 255, 255));
+		
+		Mat dst = Mat(height, width, CV_8UC3,Scalar(255,255,255));
 
 		Mat labels(height, width, CV_32SC1, Scalar(0));
 		std::queue<Point> Q;
 		int label = 0;
 
-		int di[8] = { 0,-1,-1,-1, 0, 1, 1, 1 };
-		int dj[8] = { 1, 1, 0,-1,-1,-1, 0, 1 };
+		int di[8] = {0,-1,-1,-1, 0, 1, 1, 1};
+		int dj[8] = {1, 1, 0,-1,-1,-1, 0, 1};
 
-		for (int i = 1; i < height - 1; i++) {
-			for (int j = 1; j < width - 1; j++) {
+		for (int i = 1; i < height-1; i++) {
+			for (int j = 1; j < width-1; j++) {
 				Vec3b color(rand() % 256, rand() % 256, rand() % 256);
 				if (src.at<uchar>(i, j) == 0 && labels.at<int>(i, j) == 0) {
 					label++;
 					labels.at<int>(i, j) = label;
-
+					
 					Q.push(Point(i, j));
 					while (!Q.empty()) {
 						Point q = Q.front();
 						Q.pop();
 						for (int k = 0; k < 8; k++) {
-							if (src.at<uchar>(q.x + di[k], q.y + dj[k]) == 0 && labels.at<int>(q.x + di[k], q.y + dj[k]) == 0) {
+							if (src.at<uchar>(q.x + di[k], q.y + dj[k]) == 0 && labels.at<int>(q.x + di[k], q.y + dj[k])==0) {
 								labels.at<int>(q.x + di[k], q.y + dj[k]) = label;
 								Q.push(Point(q.x + di[k], q.y + dj[k]));
 							}
@@ -1152,7 +1155,7 @@ void two_pass_Component_Labeling() {
 	while (openFileDlg(fname))
 	{
 		Mat src = imread(fname, IMREAD_GRAYSCALE);
-
+		
 		int height = src.rows;
 		int width = src.cols;
 
@@ -1171,9 +1174,9 @@ void two_pass_Component_Labeling() {
 
 		for (int i = 1; i < height - 1; i++) {
 			for (int j = 1; j < width - 1; j++) {
-
+				
 				if (src.at<uchar>(i, j) == 0 && labels.at<int>(i, j) == 0) {
-
+					
 					std::vector<int> L;
 
 					for (int k = 0; k < 8; k++) {
@@ -1196,13 +1199,13 @@ void two_pass_Component_Labeling() {
 							}
 						}
 					}
-
+					
 				}
 			}
 		}
 
 		int newlabel = 0;
-		std::vector<int> newlabels(label + 1, 0);
+		std::vector<int> newlabels(label + 1,0);
 
 		Vec3b colors[1000];
 
@@ -1214,7 +1217,7 @@ void two_pass_Component_Labeling() {
 			if (newlabels[i] == 0) {
 				newlabel++;
 				newlabels[i] = newlabel;
-
+				
 				Q.push(i);
 				while (!Q.empty()) {
 					x = Q.front();
@@ -1226,7 +1229,7 @@ void two_pass_Component_Labeling() {
 						}
 					}
 				}
-
+				
 			}
 		}
 
@@ -1237,7 +1240,7 @@ void two_pass_Component_Labeling() {
 				}
 			}
 		}
-
+       
 		for (int i = 1; i < height - 1; i++) {
 			for (int j = 1; j < width - 1; j++) {
 				dst.at<Vec3b>(i, j) = colors[labels.at<int>(i, j)];
@@ -1251,6 +1254,112 @@ void two_pass_Component_Labeling() {
 	}
 }
 
+void lab6_border(){
+
+	Mat_<uchar> img = imread("Images/triangle_up.bmp", 0);
+	Mat_<uchar> dst(img.rows, img.cols);
+	dst.setTo(255);
+
+	int di[] = { 0, -1, -1, -1,  0,  1, 1, 1};
+	int dj[] = { 1,  1,  0, -1, -1, -1, 0, 1};
+
+	std::vector<int> dirs;						//vector pentru directii
+	std::vector<std::pair<int, int>> pts;		//vector pentru punctele de pe contur
+
+	std::vector<int> derivate;
+	int derivate_aux;
+
+	int firsti=0, firstj=0;
+
+	for (int i = 0; i < img.rows;i++) {
+		for (int j = 0; j < img.cols;j++) {
+			if (img(i,j)==0) {
+				firsti = i;
+				firstj = j;
+				pts.push_back({ i,j });
+				dst(i, j) = 0;
+				goto et;
+			}
+		}
+	}
+
+et:
+	int dir = 7;
+	while (1) {
+		if (dir % 2 == 0) {
+			dir = (dir + 7) % 8;
+		}
+		else {
+			dir = (dir + 6) % 8;
+		}
+
+		for (int k = 0; k < 8; k++) {			//parcurgem vecinii incepand de la dir
+			int dirnow = (dir + k) % 8;
+			int i2 = pts.back().first + di[dirnow];
+			int j2 = pts.back().second + dj[dirnow];
+
+			if (firsti == i2 && firstj == j2) {
+				goto et2;
+			}
+
+			if (img(i2, j2) == 0) {
+				pts.push_back({ i2,j2 });
+				dst(i2, j2) = 0;
+				dir = dirnow;
+				break;
+			}
+		}
+		dirs.push_back(dir);
+
+	}
+et2:
+	printf("Directions: \n");
+	for (int i = 0; i < dirs.size(); i++) {
+		printf("%d ", dirs[i]);
+	}
+
+	for (int i = 1; i < dirs.size(); i++) {
+		derivate.push_back((dirs[i] - dirs[i-1] + 8)%8);
+	}
+
+
+	printf("\nDerivate: \n");
+	for (int i = 0; i < derivate.size(); i++) {
+		printf("%d ", derivate[i]);
+	}
+
+	imshow("image", img);
+	imshow("border", dst);
+	waitKey();
+}
+
+void lab6_reconstruct() {
+	string myText;
+
+	std::ifstream file("Images/reconstruct.txt");
+
+	int starti, startj, nr, dir;
+	file >> starti >> startj >> nr;
+
+	Mat_<uchar> dst(500,800);
+	dst.setTo(255);
+
+	dst(starti, startj) = 0;
+
+	int di[] = { 0, -1, -1, -1,  0,  1, 1, 1 };
+	int dj[] = { 1,  1,  0, -1, -1, -1, 0, 1 };
+
+	while (file) {
+		file >> dir;
+		starti = starti + di[dir];
+		startj = startj + dj[dir];
+		dst(starti, startj) = 0;
+	}
+
+	imshow("border", dst);
+	waitKey();
+}
+
 int main()
 {
 	cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_FATAL);
@@ -1259,7 +1368,7 @@ int main()
 	int op;
 	do
 	{
-		system("cls");
+		//system("cls");
 		destroyAllWindows();
 		printf("Menu:\n");
 		printf(" 1 - Open image\n");
@@ -1289,6 +1398,8 @@ int main()
 		printf(" 25 - Geometrical Features\n");
 		printf(" 26 - Color Objects form gray image\n");
 		printf(" 27 - Two pass\n");
+		printf(" 28 - Border Tracing\n");
+		printf(" 29 - Reconstruct Image\n");
 		printf(" 0 - Exit\n\n");
 		printf("Option: ");
 		scanf("%d", &op);
@@ -1378,6 +1489,11 @@ int main()
 		case 27:
 			two_pass_Component_Labeling();
 			break;
+		case 28:
+			lab6_border();
+			break;
+		case 29:
+			lab6_reconstruct();
 		}
 	} while (op != 0);
 	return 0;
